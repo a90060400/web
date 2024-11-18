@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>員工人臉註冊系統</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f5f7fa;
+            color: #2d3748;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c5282;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #4a5568;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px dashed #e2e8f0;
+            border-radius: 6px;
+            background: #f7fafc;
+            cursor: pointer;
+        }
+
+        .photo-tips {
+            background: #ebf8ff;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            border-left: 4px solid #4299e1;
+        }
+
+        .photo-tips h4 {
+            color: #2b6cb0;
+            margin-bottom: 0.5rem;
+        }
+
+        .photo-tips ul {
+            list-style-type: none;
+            padding-left: 1rem;
+        }
+
+        .photo-tips li {
+            margin: 0.5rem 0;
+            color: #4a5568;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .photo-tips li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4299e1;
+        }
+
+        #preview {
+            max-width: 300px;
+            margin-top: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: center;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button.rotate {
+            background-color: #4299e1;
+            color: white;
+        }
+
+        button.submit {
+            background-color: #48bb78;
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .success {
+            background-color: #c6f6d5;
+            color: #2f855a;
+            border: 1px solid #9ae6b4;
+        }
+
+        .error {
+            background-color: #fed7d7;
+            color: #c53030;
+            border: 1px solid #feb2b2;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 1rem;
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        select.form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        select.form-select:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+        }
+
+        select.form-select:hover {
+            border-color: #4299e1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>員工人臉註冊系統</h1>
+        
+        <div class="form-group">
+            <label>設備序列號</label>
+            <input type="text" id="machine_id" value="DC62940683A5" readonly class="form-select">
+        </div>
+
+        <div class="form-group">
+            <label>員工姓名</label>
+            <input type="text" id="name" placeholder="請輸入員工姓名">
+        </div>
+
+        <div class="form-group">
+            <label>員工編號</label>
+            <input type="text" id="name_id" placeholder="請輸入員工編號">
+        </div>
+
+        <div class="form-group">
+            <label>上傳照片</label>
+            <div class="photo-tips">
+                <h4>拍攝注意事項：</h4>
+                <ul>
+                    <li>確保照片中有清晰的正面人臉</li>
+                    <li>避免戴墨鏡或其他遮擋臉部的物品</li>
+                    <li>確保光線充足，避免背光</li>
+                    <li>保持適當距離，面部在畫面中央</li>
+                </ul>
+            </div>
+            <input type="file" id="photo" accept="image/*" capture="user" onchange="previewImage(this)">
+            <img id="preview">
+        </div>
+
+        <div class="button-group">
+            <button class="rotate" onclick="rotateImage()">旋轉照片</button>
+            <button class="submit" onclick="updateInfo()">提交註冊</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let currentRotation = 0;
+        let currentImage = null;
+
+        function previewImage(input) {
+            const preview = document.getElementById('preview');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    currentImage = e.target.result;
+                    currentRotation = 0;
+                    preview.style.transform = `rotate(${currentRotation}deg)`;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function rotateImage() {
+            const preview = document.getElementById('preview');
+            if (preview.style.display !== 'none') {
+                currentRotation = (currentRotation - 90) % 360;
+                preview.style.transform = `rotate(${currentRotation}deg)`;
+            }
+        }
+
+        async function loadMachineList() {
+            try {
+                const response = await fetch('/get_machines');
+                const machines = await response.json();
+                const selectElement = document.getElementById('machine_id');
+                
+                machines.forEach(machine => {
+                    const option = document.createElement('option');
+                    option.value = machine.code;
+                    option.textContent = machine.code;
+                    selectElement.appendChild(option);
+                });
+            } catch (error) {
+                console.error('載入設備列表失敗：', error);
+            }
+        }
+
+        function updateInfo() {
+            const name = document.getElementById('name').value;
+            const nameId = document.getElementById('name_id').value;
+            const machineId = document.getElementById('machine_id').value;
+            const photoInput = document.getElementById('photo');
+            const resultDiv = document.getElementById('result');
+
+            if (!name || !nameId || !machineId || !photoInput.files[0]) {
+                resultDiv.className = 'error';
+                resultDiv.textContent = '請填寫所有欄位並上傳照片';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('name_id', nameId);
+            formData.append('machine_id', machineId);
+            formData.append('photo', photoInput.files[0]);
+            formData.append('rotation', currentRotation);
+
+            // 顯示載入中的提示
+            resultDiv.className = '';
+            resultDiv.textContent = '處理中，請稍候...';
+
+            fetch('/update', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultDiv.className = 'success';
+                    resultDiv.textContent = '註冊成功！';
+                    // 清空表單
+                    document.getElementById('name').value = '';
+                    document.getElementById('name_id').value = '';
+                    document.getElementById('photo').value = '';
+                    document.getElementById('preview').style.display = 'none';
+                } else {
+                    resultDiv.className = 'error';
+                    resultDiv.textContent = '錯誤：' + (data.error || '未知錯誤');
+                }
+            })
+            .catch(error => {
+                resultDiv.className = 'error';
+                resultDiv.textContent = '請求失敗，請檢查網絡連接';
+                console.error('錯誤：', error);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', loadMachineList);
+    </script>
+</body>
+</html> 
