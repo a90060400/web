@@ -189,6 +189,27 @@
                 width: 100%;
             }
         }
+
+        select.form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        select.form-select:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+        }
+
+        select.form-select:hover {
+            border-color: #4299e1;
+        }
     </style>
 </head>
 <body>
@@ -197,7 +218,9 @@
         
         <div class="form-group">
             <label>設備序列號</label>
-            <input type="text" id="machine_id" value="{{ machine_id }}" readonly>
+            <select id="machine_id" class="form-select">
+                <option value="">請選擇設備序列號</option>
+            </select>
         </div>
 
         <div class="form-group">
@@ -260,13 +283,31 @@
             }
         }
 
+        async function loadMachineList() {
+            try {
+                const response = await fetch('/get_machines');
+                const machines = await response.json();
+                const selectElement = document.getElementById('machine_id');
+                
+                machines.forEach(machine => {
+                    const option = document.createElement('option');
+                    option.value = machine.code;
+                    option.textContent = machine.code;
+                    selectElement.appendChild(option);
+                });
+            } catch (error) {
+                console.error('載入設備列表失敗：', error);
+            }
+        }
+
         function updateInfo() {
             const name = document.getElementById('name').value;
             const nameId = document.getElementById('name_id').value;
+            const machineId = document.getElementById('machine_id').value;
             const photoInput = document.getElementById('photo');
             const resultDiv = document.getElementById('result');
 
-            if (!name || !nameId || !photoInput.files[0]) {
+            if (!name || !nameId || !machineId || !photoInput.files[0]) {
                 resultDiv.className = 'error';
                 resultDiv.textContent = '請填寫所有欄位並上傳照片';
                 return;
@@ -275,6 +316,7 @@
             const formData = new FormData();
             formData.append('name', name);
             formData.append('name_id', nameId);
+            formData.append('machine_id', machineId);
             formData.append('photo', photoInput.files[0]);
             formData.append('rotation', currentRotation);
 
@@ -307,6 +349,8 @@
                 console.error('錯誤：', error);
             });
         }
+
+        document.addEventListener('DOMContentLoaded', loadMachineList);
     </script>
 </body>
 </html> 
