@@ -132,7 +132,10 @@
                     formData.append('personId', personId);
                     formData.append('imgBase64', imgBase64);
                     
-                    const response = await makeRequest(url, formData);
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: formData
+                    });
                     const result = await response.json();
                     console.log('註冊人臉回應:', result);
                     
@@ -161,7 +164,10 @@
             formData.append('person', JSON.stringify({ id: personId, name: name }));
             
             try {
-                const response = await makeRequest(url, formData);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
                 const data = await response.json();
                 console.log('新增人員回應:', data);
                 return data;
@@ -172,46 +178,48 @@
         }
 
         async function makeRequest(url, formData) {
-            if (window.location.protocol === 'https:') {
-                const proxyUrl = '/proxy';
-                const response = await fetch(proxyUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        targetUrl: url,
-                        formData: Object.fromEntries(formData.entries())
-                    })
-                });
-                return response;
-            } else {
-                return fetch(url, {
-                    method: 'POST',
-                    body: formData
-                });
-            }
+            // 直接發送請求到設備
+            return fetch(url, {
+                method: 'POST',
+                body: formData
+            });
         }
 
         async function testConnection(ip) {
             try {
+                // 先進行基本的 URL 驗證
+                if (!ip) {
+                    throw new Error('請輸入IP地址');
+                }
+                
+                const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+                if (!ipPattern.test(ip)) {
+                    throw new Error('請輸入有效的IP地址格式');
+                }
+                
                 updateStatus(`正在測試連接 ${ip}:8090...`);
+                
+                // 直接連接設備的 getDeviceKey 端點
                 const url = `http://${ip}:8090/getDeviceKey`;
                 const formData = new FormData();
                 formData.append('pass', '@han97260403');
                 
-                const response = await makeRequest(url, formData);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
                 
                 const data = await response.json();
-                console.log('設備回應:', data);
-                return true;
+                
+                if (data.success) {
+                    updateStatus('設備連接正常', 'success');
+                    return true;
+                } else {
+                    throw new Error(data.msg || '設備連接失敗');
+                }
             } catch (error) {
                 console.error('連接測試失敗:', error);
-                updateStatus(`連接失敗: ${error.message}`, 'error');
+                updateStatus(error.message, 'error');
                 return false;
             }
         }
