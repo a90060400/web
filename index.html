@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人臉註冊系統</title>
+    <style>
+        body {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .processing {
+            background-color: #d9edf7;
+            color: #31708f;
+        }
+    </style>
+</head>
+<body>
+    <h1>人臉註冊系統</h1>
+    <div class="input-group">
+        <label for="ipInput">設備 IP 位址：</label>
+        <input type="text" id="ipInput" placeholder="例如：192.168.1.100" value="172.20.10.8">
+    </div>
+    <div class="input-group">
+        <label for="nameInput">姓名：</label>
+        <input type="text" id="nameInput" placeholder="請輸入姓名">
+    </div>
+    <div class="input-group">
+        <label for="idInput">ID：</label>
+        <input type="text" id="idInput" placeholder="請輸入ID">
+    </div>
+    <div class="input-group">
+        <label for="fileInput">照片：</label>
+        <input type="file" id="fileInput" accept="image/*" capture="user">
+    </div>
+    <button id="uploadBtn">註冊人臉</button>
+    <p id="status"></p>
+
+    <script>
+        function updateStatus(message, type = 'processing') {
+            const statusElement = document.getElementById('status');
+            statusElement.innerText = message;
+            statusElement.className = type;
+        }
+
+        async function registerFaceUntilSuccess(ip, personId, imageFile) {
+            const maxAttempts = 4;
+            let attempts = 0;
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const image = new Image();
+            const imageUrl = URL.createObjectURL(imageFile);
+            
+            await new Promise((resolve, reject) => {
+                image.onload = resolve;
+                image.onerror = reject;
+                image.src = imageUrl;
+            });
+            
+            let width = image.width;
+            let height = image.height;
+            const maxSize = 800;
+            
+            if (width > maxSize || height > maxSize) {
+                if (width > height) {
+                    height = (height / width) * maxSize;
+                    width = maxSize;
+                } else {
+                    width = (width / height) * maxSize;
+                    height = maxSize;
+                }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            while (attempts < maxAttempts) {
+                updateStatus(`正在嘗試註冊人臉 (第 ${attempts + 1} 次)`);
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+                ctx.translate(canvas.width/2, canvas.height/2);
+                ctx.rotate((attempts * -90) * Math.PI / 180);
+                ctx.drawImage(image, -width/2, -height/2, width, height);
+                ctx.restore();
+                
+                const imgBase64 = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+                
+                try {
+                    const url = `http://${ip}:8090/face/create`;
+                    const formData = new FormData();
+                    formData.append('pass', '@han97260403');
+                    formData.append('personId', personId);
+                    formData.append('imgBase64', imgBase64);
+                    
+                    const response = await makeRequest(url, formData);
+                    const result = await response.json();
+                    console.log('註冊人臉回應:', result);
+                    
+                    if (result.success) {
+                        URL.revokeObjectURL(imageUrl);
+                        return { success: true };
+                    }
+                    
+                    attempts++;
+                } catch (error) {
+                    console.error('註冊人臉失敗:', error);
+                    URL.revokeObjectURL(imageUrl);
+                    return { success: false, error: error.message };
+                }
+            }
+            
+            URL.revokeObjectURL(imageUrl);
+            return { success: false, error: '達到最大嘗試次數' };
+        }
+        
+        async function addPerson(ip, name, personId) {
+            updateStatus('正在新增人員資料...');
+            const url = `http://${ip}:8090/person/create`;
+            const formData = new FormData();
+            formData.append('pass', '@han97260403');
+            formData.append('person', JSON.stringify({ id: personId, name: name }));
+            
+            try {
+                const response = await makeRequest(url, formData);
+                const data = await response.json();
+                console.log('新增人員回應:', data);
+                return data;
+            } catch (error) {
+                console.error('新增人員失敗:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function makeRequest(url, formData) {
+            if (window.location.protocol === 'https:') {
+                const proxyUrl = '/proxy';
+                const response = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        targetUrl: url,
+                        formData: Object.fromEntries(formData.entries())
+                    })
+                });
+                return response;
+            } else {
+                return fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+            }
+        }
+
+        async function testConnection(ip) {
+            try {
+                updateStatus(`正在測試連接 ${ip}:8090...`);
+                const url = `http://${ip}:8090/getDeviceKey`;
+                const formData = new FormData();
+                formData.append('pass', '@han97260403');
+                
+                const response = await makeRequest(url, formData);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('設備回應:', data);
+                return true;
+            } catch (error) {
+                console.error('連接測試失敗:', error);
+                updateStatus(`連接失敗: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('fileInput');
+            const nameInput = document.getElementById('nameInput');
+            const idInput = document.getElementById('idInput');
+            const ipInput = document.getElementById('ipInput');
+            
+            const file = fileInput.files[0];
+            const name = nameInput.value.trim();
+            const personId = idInput.value.trim();
+            const ip = ipInput.value.trim();
+            
+            if (!file || !name || !personId || !ip) {
+                updateStatus('請填寫所有欄位！', 'error');
+                return;
+            }
+
+            const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!ipPattern.test(ip)) {
+                updateStatus('請輸入有效的 IP 位址！', 'error');
+                return;
+            }
+            
+            updateStatus('正在測試設備連接...');
+            const canConnect = await testConnection(ip);
+            if (!canConnect) {
+                updateStatus('無法連接到設備，請確認 IP 位址是否正確！', 'error');
+                return;
+            }
+            
+            try {
+                const personResult = await addPerson(ip, name, personId);
+                if (!personResult.success) {
+                    throw new Error('新增人員失敗：' + personResult.error);
+                }
+                
+                const faceResult = await registerFaceUntilSuccess(ip, personId, file);
+                if (!faceResult.success) {
+                    throw new Error('註冊人臉失敗：' + faceResult.error);
+                }
+                
+                updateStatus('註冊成功！', 'success');
+                
+                // 清空表單
+                fileInput.value = '';
+                nameInput.value = '';
+                idInput.value = '';
+            } catch (error) {
+                updateStatus(error.message, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
